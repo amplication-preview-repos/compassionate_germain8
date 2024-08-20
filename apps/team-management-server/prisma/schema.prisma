@@ -1,0 +1,67 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DB_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Meet {
+  createdAt DateTime  @default(now())
+  date      DateTime?
+  id        String    @id @default(cuid())
+  location  String?
+  name      String?
+  results   Result[]
+  season    Season?   @relation(fields: [seasonId], references: [id])
+  seasonId  String?
+  series    String?
+  updatedAt DateTime  @updatedAt
+}
+
+model Athlete {
+  age       Int?
+  createdAt DateTime           @default(now())
+  gender    EnumAthleteGender?
+  id        String             @id @default(cuid())
+  name      String?
+  results   Result[]
+  updatedAt DateTime           @updatedAt
+}
+
+model Result {
+  athlete   Athlete? @relation(fields: [athleteId], references: [id])
+  athleteId String?
+  createdAt DateTime @default(now())
+  event     String?
+  id        String   @id @default(cuid())
+  meet      Meet?    @relation(fields: [meetId], references: [id])
+  meetId    String?
+  place     Int?
+  time      Float?
+  updatedAt DateTime @updatedAt
+}
+
+model NewsArticle {
+  content       String?
+  createdAt     DateTime  @default(now())
+  id            String    @id @default(cuid())
+  publishedDate DateTime?
+  title         String?
+  updatedAt     DateTime  @updatedAt
+}
+
+model Season {
+  createdAt DateTime  @default(now())
+  endDate   DateTime?
+  id        String    @id @default(cuid())
+  meets     Meet[]
+  name      String?
+  startDate DateTime?
+  updatedAt DateTime  @updatedAt
+}
+
+enum EnumAthleteGender {
+  Option1
+}
