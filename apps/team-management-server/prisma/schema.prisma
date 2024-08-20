@@ -1,5 +1,5 @@
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DB_URL")
 }
 
@@ -43,10 +43,11 @@ model Result {
   updatedAt DateTime @updatedAt
 }
 
-model NewsArticle {
+model News {
   content       String?
   createdAt     DateTime  @default(now())
   id            String    @id @default(cuid())
+  image         Json?
   publishedDate DateTime?
   title         String?
   updatedAt     DateTime  @updatedAt
@@ -60,6 +61,26 @@ model Season {
   name      String?
   startDate DateTime?
   updatedAt DateTime  @updatedAt
+}
+
+model User {
+  createdAt DateTime @default(now())
+  email     String?  @unique
+  firstName String?
+  id        String   @id @default(cuid())
+  lastName  String?
+  password  String
+  roles     Json
+  updatedAt DateTime @updatedAt
+  username  String   @unique
+}
+
+model Series {
+  createdAt   DateTime @default(now())
+  description String?
+  id          String   @id @default(cuid())
+  name        String?
+  updatedAt   DateTime @updatedAt
 }
 
 enum EnumAthleteGender {

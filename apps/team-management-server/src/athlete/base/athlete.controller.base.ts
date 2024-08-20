@@ -16,7 +16,11 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { AthleteService } from "../athlete.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { AthleteCreateInput } from "./AthleteCreateInput";
 import { Athlete } from "./Athlete";
 import { AthleteFindManyArgs } from "./AthleteFindManyArgs";
@@ -26,10 +30,24 @@ import { ResultFindManyArgs } from "../../result/base/ResultFindManyArgs";
 import { Result } from "../../result/base/Result";
 import { ResultWhereUniqueInput } from "../../result/base/ResultWhereUniqueInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class AthleteControllerBase {
-  constructor(protected readonly service: AthleteService) {}
+  constructor(
+    protected readonly service: AthleteService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: Athlete })
+  @nestAccessControl.UseRoles({
+    resource: "Athlete",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createAthlete(
     @common.Body() data: AthleteCreateInput
   ): Promise<Athlete> {
@@ -46,9 +64,18 @@ export class AthleteControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [Athlete] })
   @ApiNestedQuery(AthleteFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "Athlete",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async athletes(@common.Req() request: Request): Promise<Athlete[]> {
     const args = plainToClass(AthleteFindManyArgs, request.query);
     return this.service.athletes({
@@ -64,9 +91,18 @@ export class AthleteControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: Athlete })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "Athlete",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async athlete(
     @common.Param() params: AthleteWhereUniqueInput
   ): Promise<Athlete | null> {
@@ -89,9 +125,18 @@ export class AthleteControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: Athlete })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "Athlete",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateAthlete(
     @common.Param() params: AthleteWhereUniqueInput,
     @common.Body() data: AthleteUpdateInput
@@ -122,6 +167,14 @@ export class AthleteControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: Athlete })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "Athlete",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteAthlete(
     @common.Param() params: AthleteWhereUniqueInput
   ): Promise<Athlete | null> {
@@ -147,8 +200,14 @@ export class AthleteControllerBase {
     }
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id/results")
   @ApiNestedQuery(ResultFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "Result",
+    action: "read",
+    possession: "any",
+  })
   async findResults(
     @common.Req() request: Request,
     @common.Param() params: AthleteWhereUniqueInput
@@ -187,6 +246,11 @@ export class AthleteControllerBase {
   }
 
   @common.Post("/:id/results")
+  @nestAccessControl.UseRoles({
+    resource: "Athlete",
+    action: "update",
+    possession: "any",
+  })
   async connectResults(
     @common.Param() params: AthleteWhereUniqueInput,
     @common.Body() body: ResultWhereUniqueInput[]
@@ -204,6 +268,11 @@ export class AthleteControllerBase {
   }
 
   @common.Patch("/:id/results")
+  @nestAccessControl.UseRoles({
+    resource: "Athlete",
+    action: "update",
+    possession: "any",
+  })
   async updateResults(
     @common.Param() params: AthleteWhereUniqueInput,
     @common.Body() body: ResultWhereUniqueInput[]
@@ -221,6 +290,11 @@ export class AthleteControllerBase {
   }
 
   @common.Delete("/:id/results")
+  @nestAccessControl.UseRoles({
+    resource: "Athlete",
+    action: "update",
+    possession: "any",
+  })
   async disconnectResults(
     @common.Param() params: AthleteWhereUniqueInput,
     @common.Body() body: ResultWhereUniqueInput[]

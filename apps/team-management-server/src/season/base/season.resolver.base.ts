@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { Season } from "./Season";
 import { SeasonCountArgs } from "./SeasonCountArgs";
 import { SeasonFindManyArgs } from "./SeasonFindManyArgs";
@@ -23,10 +29,20 @@ import { DeleteSeasonArgs } from "./DeleteSeasonArgs";
 import { MeetFindManyArgs } from "../../meet/base/MeetFindManyArgs";
 import { Meet } from "../../meet/base/Meet";
 import { SeasonService } from "../season.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => Season)
 export class SeasonResolverBase {
-  constructor(protected readonly service: SeasonService) {}
+  constructor(
+    protected readonly service: SeasonService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "Season",
+    action: "read",
+    possession: "any",
+  })
   async _seasonsMeta(
     @graphql.Args() args: SeasonCountArgs
   ): Promise<MetaQueryPayload> {
@@ -36,12 +52,24 @@ export class SeasonResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [Season])
+  @nestAccessControl.UseRoles({
+    resource: "Season",
+    action: "read",
+    possession: "any",
+  })
   async seasons(@graphql.Args() args: SeasonFindManyArgs): Promise<Season[]> {
     return this.service.seasons(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => Season, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "Season",
+    action: "read",
+    possession: "own",
+  })
   async season(
     @graphql.Args() args: SeasonFindUniqueArgs
   ): Promise<Season | null> {
@@ -52,7 +80,13 @@ export class SeasonResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => Season)
+  @nestAccessControl.UseRoles({
+    resource: "Season",
+    action: "create",
+    possession: "any",
+  })
   async createSeason(@graphql.Args() args: CreateSeasonArgs): Promise<Season> {
     return await this.service.createSeason({
       ...args,
@@ -60,7 +94,13 @@ export class SeasonResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => Season)
+  @nestAccessControl.UseRoles({
+    resource: "Season",
+    action: "update",
+    possession: "any",
+  })
   async updateSeason(
     @graphql.Args() args: UpdateSeasonArgs
   ): Promise<Season | null> {
@@ -80,6 +120,11 @@ export class SeasonResolverBase {
   }
 
   @graphql.Mutation(() => Season)
+  @nestAccessControl.UseRoles({
+    resource: "Season",
+    action: "delete",
+    possession: "any",
+  })
   async deleteSeason(
     @graphql.Args() args: DeleteSeasonArgs
   ): Promise<Season | null> {
@@ -95,7 +140,13 @@ export class SeasonResolverBase {
     }
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.ResolveField(() => [Meet], { name: "meets" })
+  @nestAccessControl.UseRoles({
+    resource: "Meet",
+    action: "read",
+    possession: "any",
+  })
   async findMeets(
     @graphql.Parent() parent: Season,
     @graphql.Args() args: MeetFindManyArgs

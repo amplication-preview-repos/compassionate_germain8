@@ -16,7 +16,11 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { SeasonService } from "../season.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { SeasonCreateInput } from "./SeasonCreateInput";
 import { Season } from "./Season";
 import { SeasonFindManyArgs } from "./SeasonFindManyArgs";
@@ -26,10 +30,24 @@ import { MeetFindManyArgs } from "../../meet/base/MeetFindManyArgs";
 import { Meet } from "../../meet/base/Meet";
 import { MeetWhereUniqueInput } from "../../meet/base/MeetWhereUniqueInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class SeasonControllerBase {
-  constructor(protected readonly service: SeasonService) {}
+  constructor(
+    protected readonly service: SeasonService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: Season })
+  @nestAccessControl.UseRoles({
+    resource: "Season",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createSeason(@common.Body() data: SeasonCreateInput): Promise<Season> {
     return await this.service.createSeason({
       data: data,
@@ -44,9 +62,18 @@ export class SeasonControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [Season] })
   @ApiNestedQuery(SeasonFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "Season",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async seasons(@common.Req() request: Request): Promise<Season[]> {
     const args = plainToClass(SeasonFindManyArgs, request.query);
     return this.service.seasons({
@@ -62,9 +89,18 @@ export class SeasonControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: Season })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "Season",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async season(
     @common.Param() params: SeasonWhereUniqueInput
   ): Promise<Season | null> {
@@ -87,9 +123,18 @@ export class SeasonControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: Season })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "Season",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateSeason(
     @common.Param() params: SeasonWhereUniqueInput,
     @common.Body() data: SeasonUpdateInput
@@ -120,6 +165,14 @@ export class SeasonControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: Season })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "Season",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteSeason(
     @common.Param() params: SeasonWhereUniqueInput
   ): Promise<Season | null> {
@@ -145,8 +198,14 @@ export class SeasonControllerBase {
     }
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id/meets")
   @ApiNestedQuery(MeetFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "Meet",
+    action: "read",
+    possession: "any",
+  })
   async findMeets(
     @common.Req() request: Request,
     @common.Param() params: SeasonWhereUniqueInput
@@ -180,6 +239,11 @@ export class SeasonControllerBase {
   }
 
   @common.Post("/:id/meets")
+  @nestAccessControl.UseRoles({
+    resource: "Season",
+    action: "update",
+    possession: "any",
+  })
   async connectMeets(
     @common.Param() params: SeasonWhereUniqueInput,
     @common.Body() body: MeetWhereUniqueInput[]
@@ -197,6 +261,11 @@ export class SeasonControllerBase {
   }
 
   @common.Patch("/:id/meets")
+  @nestAccessControl.UseRoles({
+    resource: "Season",
+    action: "update",
+    possession: "any",
+  })
   async updateMeets(
     @common.Param() params: SeasonWhereUniqueInput,
     @common.Body() body: MeetWhereUniqueInput[]
@@ -214,6 +283,11 @@ export class SeasonControllerBase {
   }
 
   @common.Delete("/:id/meets")
+  @nestAccessControl.UseRoles({
+    resource: "Season",
+    action: "update",
+    possession: "any",
+  })
   async disconnectMeets(
     @common.Param() params: SeasonWhereUniqueInput,
     @common.Body() body: MeetWhereUniqueInput[]

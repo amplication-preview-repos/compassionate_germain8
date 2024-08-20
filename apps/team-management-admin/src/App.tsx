@@ -17,15 +17,23 @@ import { ResultList } from "./result/ResultList";
 import { ResultCreate } from "./result/ResultCreate";
 import { ResultEdit } from "./result/ResultEdit";
 import { ResultShow } from "./result/ResultShow";
-import { NewsArticleList } from "./newsArticle/NewsArticleList";
-import { NewsArticleCreate } from "./newsArticle/NewsArticleCreate";
-import { NewsArticleEdit } from "./newsArticle/NewsArticleEdit";
-import { NewsArticleShow } from "./newsArticle/NewsArticleShow";
+import { NewsList } from "./news/NewsList";
+import { NewsCreate } from "./news/NewsCreate";
+import { NewsEdit } from "./news/NewsEdit";
+import { NewsShow } from "./news/NewsShow";
 import { SeasonList } from "./season/SeasonList";
 import { SeasonCreate } from "./season/SeasonCreate";
 import { SeasonEdit } from "./season/SeasonEdit";
 import { SeasonShow } from "./season/SeasonShow";
-import { jwtAuthProvider } from "./auth-provider/ra-auth-jwt";
+import { UserList } from "./user/UserList";
+import { UserCreate } from "./user/UserCreate";
+import { UserEdit } from "./user/UserEdit";
+import { UserShow } from "./user/UserShow";
+import { SeriesList } from "./series/SeriesList";
+import { SeriesCreate } from "./series/SeriesCreate";
+import { SeriesEdit } from "./series/SeriesEdit";
+import { SeriesShow } from "./series/SeriesShow";
+import { httpAuthProvider } from "./auth-provider/ra-auth-http";
 
 const App = (): React.ReactElement => {
   const [dataProvider, setDataProvider] = useState<DataProvider | null>(null);
@@ -46,7 +54,7 @@ const App = (): React.ReactElement => {
       <Admin
         title={"Team Management"}
         dataProvider={dataProvider}
-        authProvider={jwtAuthProvider}
+        authProvider={httpAuthProvider}
         theme={theme}
         dashboard={Dashboard}
         loginPage={Login}
@@ -73,11 +81,11 @@ const App = (): React.ReactElement => {
           show={ResultShow}
         />
         <Resource
-          name="NewsArticle"
-          list={NewsArticleList}
-          edit={NewsArticleEdit}
-          create={NewsArticleCreate}
-          show={NewsArticleShow}
+          name="News"
+          list={NewsList}
+          edit={NewsEdit}
+          create={NewsCreate}
+          show={NewsShow}
         />
         <Resource
           name="Season"
@@ -85,6 +93,20 @@ const App = (): React.ReactElement => {
           edit={SeasonEdit}
           create={SeasonCreate}
           show={SeasonShow}
+        />
+        <Resource
+          name="User"
+          list={UserList}
+          edit={UserEdit}
+          create={UserCreate}
+          show={UserShow}
+        />
+        <Resource
+          name="Series"
+          list={SeriesList}
+          edit={SeriesEdit}
+          create={SeriesCreate}
+          show={SeriesShow}
         />
       </Admin>
     </div>

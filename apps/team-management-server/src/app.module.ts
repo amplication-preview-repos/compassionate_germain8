@@ -2,25 +2,36 @@ import { Module } from "@nestjs/common";
 import { MeetModule } from "./meet/meet.module";
 import { AthleteModule } from "./athlete/athlete.module";
 import { ResultModule } from "./result/result.module";
-import { NewsArticleModule } from "./newsArticle/newsArticle.module";
+import { NewsModule } from "./news/news.module";
 import { SeasonModule } from "./season/season.module";
+import { UserModule } from "./user/user.module";
+import { SeriesModule } from "./series/series.module";
 import { HealthModule } from "./health/health.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { SecretsManagerModule } from "./providers/secrets/secretsManager.module";
+import { StorageModule } from "./storage/storage.module";
 import { ServeStaticModule } from "@nestjs/serve-static";
 import { ServeStaticOptionsService } from "./serveStaticOptions.service";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { GraphQLModule } from "@nestjs/graphql";
 import { ApolloDriver, ApolloDriverConfig } from "@nestjs/apollo";
 
+import { ACLModule } from "./auth/acl.module";
+import { AuthModule } from "./auth/auth.module";
+
 @Module({
   controllers: [],
   imports: [
+    StorageModule,
+    ACLModule,
+    AuthModule,
     MeetModule,
     AthleteModule,
     ResultModule,
-    NewsArticleModule,
+    NewsModule,
     SeasonModule,
+    UserModule,
+    SeriesModule,
     HealthModule,
     PrismaModule,
     SecretsManagerModule,

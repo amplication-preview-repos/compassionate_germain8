@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { Athlete } from "./Athlete";
 import { AthleteCountArgs } from "./AthleteCountArgs";
 import { AthleteFindManyArgs } from "./AthleteFindManyArgs";
@@ -23,10 +29,20 @@ import { DeleteAthleteArgs } from "./DeleteAthleteArgs";
 import { ResultFindManyArgs } from "../../result/base/ResultFindManyArgs";
 import { Result } from "../../result/base/Result";
 import { AthleteService } from "../athlete.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => Athlete)
 export class AthleteResolverBase {
-  constructor(protected readonly service: AthleteService) {}
+  constructor(
+    protected readonly service: AthleteService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "Athlete",
+    action: "read",
+    possession: "any",
+  })
   async _athletesMeta(
     @graphql.Args() args: AthleteCountArgs
   ): Promise<MetaQueryPayload> {
@@ -36,14 +52,26 @@ export class AthleteResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [Athlete])
+  @nestAccessControl.UseRoles({
+    resource: "Athlete",
+    action: "read",
+    possession: "any",
+  })
   async athletes(
     @graphql.Args() args: AthleteFindManyArgs
   ): Promise<Athlete[]> {
     return this.service.athletes(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => Athlete, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "Athlete",
+    action: "read",
+    possession: "own",
+  })
   async athlete(
     @graphql.Args() args: AthleteFindUniqueArgs
   ): Promise<Athlete | null> {
@@ -54,7 +82,13 @@ export class AthleteResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => Athlete)
+  @nestAccessControl.UseRoles({
+    resource: "Athlete",
+    action: "create",
+    possession: "any",
+  })
   async createAthlete(
     @graphql.Args() args: CreateAthleteArgs
   ): Promise<Athlete> {
@@ -64,7 +98,13 @@ export class AthleteResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => Athlete)
+  @nestAccessControl.UseRoles({
+    resource: "Athlete",
+    action: "update",
+    possession: "any",
+  })
   async updateAthlete(
     @graphql.Args() args: UpdateAthleteArgs
   ): Promise<Athlete | null> {
@@ -84,6 +124,11 @@ export class AthleteResolverBase {
   }
 
   @graphql.Mutation(() => Athlete)
+  @nestAccessControl.UseRoles({
+    resource: "Athlete",
+    action: "delete",
+    possession: "any",
+  })
   async deleteAthlete(
     @graphql.Args() args: DeleteAthleteArgs
   ): Promise<Athlete | null> {
@@ -99,7 +144,13 @@ export class AthleteResolverBase {
     }
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.ResolveField(() => [Result], { name: "results" })
+  @nestAccessControl.UseRoles({
+    resource: "Result",
+    action: "read",
+    possession: "any",
+  })
   async findResults(
     @graphql.Parent() parent: Athlete,
     @graphql.Args() args: ResultFindManyArgs

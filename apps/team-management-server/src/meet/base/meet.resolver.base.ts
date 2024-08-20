@@ -13,6 +13,12 @@ import * as graphql from "@nestjs/graphql";
 import { GraphQLError } from "graphql";
 import { isRecordNotFoundError } from "../../prisma.util";
 import { MetaQueryPayload } from "../../util/MetaQueryPayload";
+import * as nestAccessControl from "nest-access-control";
+import * as gqlACGuard from "../../auth/gqlAC.guard";
+import { GqlDefaultAuthGuard } from "../../auth/gqlDefaultAuth.guard";
+import * as common from "@nestjs/common";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { Meet } from "./Meet";
 import { MeetCountArgs } from "./MeetCountArgs";
 import { MeetFindManyArgs } from "./MeetFindManyArgs";
@@ -24,10 +30,20 @@ import { ResultFindManyArgs } from "../../result/base/ResultFindManyArgs";
 import { Result } from "../../result/base/Result";
 import { Season } from "../../season/base/Season";
 import { MeetService } from "../meet.service";
+@common.UseGuards(GqlDefaultAuthGuard, gqlACGuard.GqlACGuard)
 @graphql.Resolver(() => Meet)
 export class MeetResolverBase {
-  constructor(protected readonly service: MeetService) {}
+  constructor(
+    protected readonly service: MeetService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
 
+  @graphql.Query(() => MetaQueryPayload)
+  @nestAccessControl.UseRoles({
+    resource: "Meet",
+    action: "read",
+    possession: "any",
+  })
   async _meetsMeta(
     @graphql.Args() args: MeetCountArgs
   ): Promise<MetaQueryPayload> {
@@ -37,12 +53,24 @@ export class MeetResolverBase {
     };
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => [Meet])
+  @nestAccessControl.UseRoles({
+    resource: "Meet",
+    action: "read",
+    possession: "any",
+  })
   async meets(@graphql.Args() args: MeetFindManyArgs): Promise<Meet[]> {
     return this.service.meets(args);
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.Query(() => Meet, { nullable: true })
+  @nestAccessControl.UseRoles({
+    resource: "Meet",
+    action: "read",
+    possession: "own",
+  })
   async meet(@graphql.Args() args: MeetFindUniqueArgs): Promise<Meet | null> {
     const result = await this.service.meet(args);
     if (result === null) {
@@ -51,7 +79,13 @@ export class MeetResolverBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => Meet)
+  @nestAccessControl.UseRoles({
+    resource: "Meet",
+    action: "create",
+    possession: "any",
+  })
   async createMeet(@graphql.Args() args: CreateMeetArgs): Promise<Meet> {
     return await this.service.createMeet({
       ...args,
@@ -67,7 +101,13 @@ export class MeetResolverBase {
     });
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @graphql.Mutation(() => Meet)
+  @nestAccessControl.UseRoles({
+    resource: "Meet",
+    action: "update",
+    possession: "any",
+  })
   async updateMeet(@graphql.Args() args: UpdateMeetArgs): Promise<Meet | null> {
     try {
       return await this.service.updateMeet({
@@ -93,6 +133,11 @@ export class MeetResolverBase {
   }
 
   @graphql.Mutation(() => Meet)
+  @nestAccessControl.UseRoles({
+    resource: "Meet",
+    action: "delete",
+    possession: "any",
+  })
   async deleteMeet(@graphql.Args() args: DeleteMeetArgs): Promise<Meet | null> {
     try {
       return await this.service.deleteMeet(args);
@@ -106,7 +151,13 @@ export class MeetResolverBase {
     }
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.ResolveField(() => [Result], { name: "results" })
+  @nestAccessControl.UseRoles({
+    resource: "Result",
+    action: "read",
+    possession: "any",
+  })
   async findResults(
     @graphql.Parent() parent: Meet,
     @graphql.Args() args: ResultFindManyArgs
@@ -120,9 +171,15 @@ export class MeetResolverBase {
     return results;
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @graphql.ResolveField(() => Season, {
     nullable: true,
     name: "season",
+  })
+  @nestAccessControl.UseRoles({
+    resource: "Season",
+    action: "read",
+    possession: "any",
   })
   async getSeason(@graphql.Parent() parent: Meet): Promise<Season | null> {
     const result = await this.service.getSeason(parent.id);
